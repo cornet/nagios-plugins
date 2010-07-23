@@ -21,11 +21,19 @@
 ## along with this program; if not, write to the Free Software
 ## Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 ##
-## $Id: check_jk_status.pl,v 1.1 2010/07/23 10:15:03 nathan Exp $
-##
 ###############################################################################
 
-use strict;
+##
+## Originally from
+##       http://www.linuxaddicted.de/blog/projects/nagios-plugins/#check_jk_status 
+##
+## ChangeLog
+## 	- Added URI param
+##      - Fixed manadatory args logic
+##      - mod_jk now reports "OK/IDLE" rather than "N/A"
+##
+
+use   strict;
 use warnings;
 use XML::Simple;
 use Data::Dumper;
