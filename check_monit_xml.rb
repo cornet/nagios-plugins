@@ -6,13 +6,13 @@ require 'rexml/document'
 
 
 # Nagios exit status
-OK       = 1
-WARNING  = 2
-CRITICAL = 3
-UNKNOWN  = 4
+UNDEF    = -1
+OK       = 0
+WARNING  = 1
+CRITICAL = 2
+UNKNOWN  = 3
 
-# Set status to OK initally
-$exit_status = OK
+$exit_status = UNDEF
 
 def parse_options(args)
 
@@ -151,17 +151,26 @@ end
 
 # Return what's left
 services.each do |service,info|
-  if info["monitor"] != 1 
+  if info["monitor"] == 1 
+    set_exit_status(OK)
+  else
     messages << "#{service} not monitored"
     set_exit_status(CRITICAL)
   end
 
-  if info["status"] != 0
+  if info["status"] == 0
+    set_exit_status(OK)
+  else 
     messages << "#{service} down"
     set_exit_status(CRITICAL)
   end
 end
 
+# See if we got here without updating exit status
+if $exit_status == UNDEF 
+  messages << "Plugin Error!"
+  set_exit_status(UNKNOWN)
+end
 
 if messages.length == 0
   puts "OK"
