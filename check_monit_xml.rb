@@ -11,7 +11,6 @@ WARNING  = 2
 CRITICAL = 3
 UNKNOWN  = 4
 
-
 # Set status to OK initally
 $exit_status = OK
 
@@ -84,9 +83,9 @@ def get_status(options)
     http = Net::HTTP.start(options[:hostname], options[:port])
     req = Net::HTTP::Get.new("/_status?format=xml")
 
-    #'if options[:user]
-     # req.basic_auth(options[:user], options[:password])
-    #end
+    if options[:user]
+      req.basic_auth(options[:user], options[:password])
+    end
 
     response = http.request(req)
 
@@ -109,15 +108,7 @@ end
 
 def get_services(xml)
   begin
-    #
-    # Create XML Object from response
-    #
     doc = REXML::Document.new xml
-
-    #
-    # Go through each instance and check it's status
-    #
-    count = 0
 
     services = Hash.new
 
@@ -138,8 +129,7 @@ def get_services(xml)
   end
 end
 
-
-# Array to hold status messages
+# Messages for Nagios
 messages = Array.new
 
 options = parse_options(ARGV)
@@ -150,7 +140,6 @@ services = get_services(xml)
 
 # Revove everything we are not interested in
 services.each do |service,info|
-
   if options[:group] && (not info['group'] == options[:group])
     services.delete(service)
   end
@@ -162,7 +151,6 @@ end
 
 # Return what's left
 services.each do |service,info|
-
   if info["monitor"] != 1 
     messages << "#{service} not monitored"
     set_exit_status(CRITICAL)
@@ -178,6 +166,7 @@ end
 if messages.length == 0
   puts "OK"
 else
-  messages.each { |msg| puts msg }
+  puts messages.join(', ')
 end
+
 exit $exit_status
