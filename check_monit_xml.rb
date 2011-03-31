@@ -5,20 +5,16 @@ require 'net/http'
 require 'rexml/document'
 
 
-# Array to hold status messages
-messages = Array.new
+# Nagios exit status
+OK       = 1
+WARNING  = 2
+CRITICAL = 3
+UNKNOWN  = 4
+
 
 # Set status to OK initally
-$exit_status = 0
+$exit_status = OK
 
-#
-# parse_options:
-#
-# 	params:
-# 		args :   ARGV
-# 	returns:
-# 		hash containing options
-#
 def parse_options(args)
 
   # Hash to hold options
@@ -52,7 +48,7 @@ def parse_options(args)
 
     opts.on_tail('-h', '--help', 'Displays usage information') do 
       puts opts
-      exit 3
+      exit UNKNOWN
     end
 
   end
@@ -72,11 +68,11 @@ def parse_options(args)
       options
   else
     puts parser.to_a
-    exit 3
+    exit UNKNOWN
   end
 end
 
-def exit_status(status)
+def set_exit_status(status)
   $exit_status = status > $exit_status ? status : $exit_status
 end
 
@@ -96,20 +92,18 @@ def get_status(options)
 
     if response.code != "200"
       puts "Got #{response.code} Error"
-      exit 3
+      exit UNKNOWN
     else
       return response.body
     end
 
   rescue SocketError
     puts "Socket Error"
-    status = 3
-    exit status
+    exit UNKNOWN
 
   rescue Net::HTTPServerException => e
     puts e
-    status = 3
-    exit status
+    exit UNKNOWN
   end
 end
 
@@ -139,10 +133,14 @@ def get_services(xml)
     return services
 
   rescue REXML::ParseException
-    messages << "XML Parse Error"
-    status = 3
+    puts "XML Parse Error"
+    exit UNKNOWN
   end
 end
+
+
+# Array to hold status messages
+messages = Array.new
 
 options = parse_options(ARGV)
 
@@ -162,19 +160,17 @@ services.each do |service,info|
   end
 end
 
-p services 
-
 # Return what's left
 services.each do |service,info|
 
   if info["monitor"] != 1 
     messages << "#{service} not monitored"
-    exit_status(3)
+    set_exit_status(CRITICAL)
   end
 
   if info["status"] != 0
     messages << "#{service} down"
-    exit_status(2)
+    set_exit_status(CRITICAL)
   end
 end
 
